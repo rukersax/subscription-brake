@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield Base centered in 66dp safe zone (canvas 108dp, center 54, 54) -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M54,26 L76,34 L76,52 C76,66 66.5,78.5 54,82 C41.5,78.5 32,66 32,52 L32,34 Z" />
+    <!-- Shield Inner Contrast -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M54,30 L72,37 L72,52 C72,63.5 64.2,74.5 54,77.5 C43.8,74.5 36,63.5 36,52 L36,37 Z" />
+    <!-- Credit Card / Pause Brake Symbol inside Shield -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M42,44 L66,44 C67.1,44 68,44.9 68,46 L68,60 C68,61.1 67.1,62 66,62 L42,62 C40.9,62 40,61.1 40,60 L40,46 C40,44.9 40.9,44 42,44 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M40,48 L68,48 L68,51 L40,51 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,55 L50,55 L50,58 L44,58 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,55 L64,55 L64,57 L54,57 Z" />
+</vector>

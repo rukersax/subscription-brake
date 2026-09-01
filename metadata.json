@@ -1,0 +1,7 @@
+{
+  "name": "Subscription Brake",
+  "description": "A privacy-first financial guard dog application that tracks recurring subscriptions, detects silent price hikes, and alerts before trial expiries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
