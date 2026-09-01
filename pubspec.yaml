@@ -13,35 +13,23 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.5.1
 
-  # Local Offline Database
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-
   # Offline Push Notifications ($0 Server Costs)
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
 
-  # Direct Cancellation URLs (1-Tap Cancel)
+  # Direct 1-Tap Cancellation URLs
   url_launcher: ^6.3.0
 
-  # Zero-Knowledge AES-256 Storage & Key Management
+  # Secure Storage & Export / Share
   flutter_secure_storage: ^9.2.2
-  encrypt: ^5.0.3
-  crypto: ^3.0.3
-
-  # UI, Icons, Typography & Charts
-  cupertino_icons: ^1.0.8
-  intl: ^0.19.0
-  fl_chart: ^0.68.0
   share_plus: ^10.0.0
-  flutter_animate: ^4.5.0
+  intl: ^0.19.0
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  hive_generator: ^2.0.1
-  build_runner: ^2.4.9
 
 flutter:
   uses-material-design: true
