@@ -42,57 +42,11 @@ jobs:
           fi
 
           # 2. Configure coreLibraryDesugaring & minSdk 21+ for flutter_local_notifications
-          if [ -f "../scripts/patch_android.py" ]; then
-            python3 ../scripts/patch_android.py .
-          elif [ -f "scripts/patch_android.py" ]; then
+          if [ -f "scripts/patch_android.py" ]; then
             python3 scripts/patch_android.py .
+          elif [ -f "../scripts/patch_android.py" ]; then
+            python3 ../scripts/patch_android.py .
           fi
-
-          # Inline patch fallback to guarantee desugaring configuration
-          python3 - << 'EOF'
-import os, re
-
-for app_dir in ["android/app"]:
-    if not os.path.exists(app_dir):
-        continue
-    for name in ["build.gradle.kts", "build.gradle"]:
-        path = os.path.join(app_dir, name)
-        if not os.path.exists(path):
-            continue
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        is_kts = name.endswith(".kts")
-
-        # minSdk 21
-        content = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 21', content)
-        content = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 21', content)
-
-        # multiDex
-        if "multiDexEnabled" not in content and "defaultConfig {" in content:
-            assign = "multiDexEnabled = true" if is_kts else "multiDexEnabled true"
-            content = content.replace("defaultConfig {", f"defaultConfig {{\n        {assign}")
-
-        # desugaring flag
-        if "isCoreLibraryDesugaringEnabled" not in content and "coreLibraryDesugaringEnabled" not in content:
-            flag = "isCoreLibraryDesugaringEnabled = true" if is_kts else "coreLibraryDesugaringEnabled true"
-            if "compileOptions {" in content:
-                content = content.replace("compileOptions {", f"compileOptions {{\n        {flag}")
-            elif "android {" in content:
-                content = content.replace("android {", f"android {{\n    compileOptions {{\n        {flag}\n        sourceCompatibility = JavaVersion.VERSION_1_8\n        targetCompatibility = JavaVersion.VERSION_1_8\n    }}")
-
-        # desugar dependency
-        if "desugar_jdk_libs" not in content:
-            dep = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")' if is_kts else "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-            if "dependencies {" in content:
-                content = content.replace("dependencies {", f"dependencies {{\n    {dep}")
-            else:
-                content += f"\ndependencies {{\n    {dep}\n}}\n"
-
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
-        print(f"Desugaring patched for {path}")
-EOF
 
           # 3. Resolve dependencies
           flutter pub get
@@ -105,42 +59,12 @@ EOF
           fi
           cd "$TARGET_DIR"
 
-          # Re-apply patch right before building in case Flutter migration touched build.gradle
-          python3 - << 'EOF'
-import os, re
-for app_dir in ["android/app"]:
-    if not os.path.exists(app_dir):
-        continue
-    for name in ["build.gradle.kts", "build.gradle"]:
-        path = os.path.join(app_dir, name)
-        if not os.path.exists(path):
-            continue
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        is_kts = name.endswith(".kts")
-        content = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 21', content)
-        content = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 21', content)
-
-        if "multiDexEnabled" not in content and "defaultConfig {" in content:
-            assign = "multiDexEnabled = true" if is_kts else "multiDexEnabled true"
-            content = content.replace("defaultConfig {", f"defaultConfig {{\n        {assign}")
-
-        if "isCoreLibraryDesugaringEnabled" not in content and "coreLibraryDesugaringEnabled" not in content:
-            flag = "isCoreLibraryDesugaringEnabled = true" if is_kts else "coreLibraryDesugaringEnabled true"
-            if "compileOptions {" in content:
-                content = content.replace("compileOptions {", f"compileOptions {{\n        {flag}")
-
-        if "desugar_jdk_libs" not in content:
-            dep = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")' if is_kts else "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-            if "dependencies {" in content:
-                content = content.replace("dependencies {", f"dependencies {{\n    {dep}")
-            else:
-                content += f"\ndependencies {{\n    {dep}\n}}\n"
-
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content)
-EOF
+          # Ensure patch is applied before build
+          if [ -f "scripts/patch_android.py" ]; then
+            python3 scripts/patch_android.py .
+          elif [ -f "../scripts/patch_android.py" ]; then
+            python3 ../scripts/patch_android.py .
+          fi
 
           # Build release APK; fallback to debug if release signing requires config
           flutter build apk --release || flutter build apk --debug
