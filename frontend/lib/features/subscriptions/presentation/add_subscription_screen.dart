@@ -212,10 +212,10 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
               controller: _tabController,
               children: [
                 _buildCatalogTab(catalogList),
-                _buildCustomFormTab(),
+                _buildCustomFormTab(tr),
               ],
             )
-          : _buildCustomFormTab(),
+          : _buildCustomFormTab(tr),
     );
   }
 
@@ -266,7 +266,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
     );
   }
 
-  Widget _buildCustomFormTab() {
+  Widget _buildCustomFormTab(AppStrings tr) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(

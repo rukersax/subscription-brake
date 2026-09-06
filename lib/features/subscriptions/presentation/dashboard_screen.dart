@@ -649,6 +649,7 @@ class DashboardScreen extends ConsumerWidget {
     WidgetRef ref,
     UserSubscriptionItem sub,
   ) {
+    final tr = ref.read(stringsProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
