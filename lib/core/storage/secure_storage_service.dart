@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Secure local token and credential storage service.
@@ -38,6 +39,23 @@ class SecureStorageService {
 
   Future<String> getPreferredCurrency() async {
     return (await _storage.read(key: _keyPreferredCurrency)) ?? 'TRY';
+  }
+
+  static const String _keySubscriptions = 'user_subscriptions_v1';
+
+  Future<void> saveSubscriptions(List<Map<String, dynamic>> items) async {
+    await _storage.write(key: _keySubscriptions, value: jsonEncode(items));
+  }
+
+  Future<List<Map<String, dynamic>>?> getSubscriptions() async {
+    final raw = await _storage.read(key: _keySubscriptions);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw) as List;
+      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> clearAll() async {

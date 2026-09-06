@@ -119,4 +119,26 @@ class UserSubscriptionItem {
       notes: json['notes'] as String?,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'catalog_id': catalogId,
+      'service_name': serviceName,
+      'category': category,
+      'billing_cycle': billingCycle,
+      'price': price,
+      'currency': currency,
+      'next_billing_date': nextBillingDate.toIso8601String(),
+      'trial_end_date': trialEndDate?.toIso8601String(),
+      'is_trial': isTrial,
+      'alert_trial_24h': alertTrial24h,
+      'baseline_catalog_price': baselineCatalogPrice,
+      'is_price_hike_detected': isPriceHikeDetected,
+      'price_hike_percentage': priceHikePercentage,
+      'status': status,
+      'payment_method_hint': paymentMethodHint,
+      'notes': notes,
+    };
+  }
 }

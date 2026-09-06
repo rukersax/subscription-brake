@@ -346,16 +346,52 @@ class DashboardScreen extends ConsumerWidget {
                 // Empty state or list
                 if (filteredSubscriptions.isEmpty)
                   Container(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                     alignment: Alignment.center,
                     child: Column(
                       children: [
-                        Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade400),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No subscriptions in this category.',
-                          style: TextStyle(color: Colors.grey.shade600),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryNavy.withOpacity(0.06),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey.shade400),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          selectedCategory == 'All'
+                              ? 'Henüz abonelik eklenmedi'
+                              : '$selectedCategory kategorisinde abonelik yok',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          selectedCategory == 'All'
+                              ? 'Takip etmek istediğiniz dijital aboneliklerinizi sağ alttaki butonla ekleyin.'
+                              : 'Farklı bir kategori seçebilir veya yeni ekleyebilirsiniz.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        ),
+                        if (selectedCategory == 'All') ...[
+                          const SizedBox(height: 20),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryNavy,
+                              side: const BorderSide(color: AppTheme.primaryNavy),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('İlk Aboneliğini Ekle'),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const AddSubscriptionScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   )

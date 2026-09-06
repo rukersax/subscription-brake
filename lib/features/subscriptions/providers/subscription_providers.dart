@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/storage/secure_storage_service.dart';
 import '../models/subscription_model.dart';
 import 'catalog_provider.dart';
 
@@ -85,9 +86,10 @@ final selectedCurrencyProvider = StateProvider<String>((ref) => AppConfig.defaul
 /// Selected Category Filter State ('All' or specific category)
 final selectedCategoryFilterProvider = StateProvider<String>((ref) => 'All');
 
-/// StateNotifier to manage user subscriptions list with full CRUD
+/// StateNotifier to manage user subscriptions list with full CRUD & local persistence
 class SubscriptionListNotifier extends StateNotifier<AsyncValue<List<UserSubscriptionItem>>> {
   final Ref ref;
+  final SecureStorageService _storage = SecureStorageService();
 
   SubscriptionListNotifier(this.ref) : super(const AsyncValue.loading()) {
     loadSubscriptions();
@@ -96,14 +98,25 @@ class SubscriptionListNotifier extends StateNotifier<AsyncValue<List<UserSubscri
   Future<void> loadSubscriptions() async {
     state = const AsyncValue.loading();
     try {
-      if (AppConfig.developmentMode) {
-        await Future.delayed(const Duration(milliseconds: 250));
-        state = AsyncValue.data(List.from(_mockInitialSubscriptions));
+      final storedData = await _storage.getSubscriptions();
+      if (storedData != null) {
+        final items = storedData.map((e) => UserSubscriptionItem.fromJson(e)).toList();
+        state = AsyncValue.data(items);
       } else {
-        state = AsyncValue.data(List.from(_mockInitialSubscriptions));
+        // App starts empty on clean install as requested
+        state = const AsyncValue.data([]);
       }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> _persistCurrentState(List<UserSubscriptionItem> items) async {
+    try {
+      final jsonList = items.map((i) => i.toJson()).toList();
+      await _storage.saveSubscriptions(jsonList);
+    } catch (e) {
+      // Storage error safeguard
     }
   }
 
@@ -161,21 +174,25 @@ class SubscriptionListNotifier extends StateNotifier<AsyncValue<List<UserSubscri
     );
 
     state.whenData((list) {
-      state = AsyncValue.data([newItem, ...list]);
+      final updated = [newItem, ...list];
+      state = AsyncValue.data(updated);
+      _persistCurrentState(updated);
     });
   }
 
   void updateSubscription(UserSubscriptionItem updated) {
     state.whenData((list) {
-      state = AsyncValue.data(
-        list.map((item) => item.id == updated.id ? updated : item).toList(),
-      );
+      final updatedList = list.map((item) => item.id == updated.id ? updated : item).toList();
+      state = AsyncValue.data(updatedList);
+      _persistCurrentState(updatedList);
     });
   }
 
   void removeSubscription(String id) {
     state.whenData((list) {
-      state = AsyncValue.data(list.where((element) => element.id != id).toList());
+      final updatedList = list.where((element) => element.id != id).toList();
+      state = AsyncValue.data(updatedList);
+      _persistCurrentState(updatedList);
     });
   }
 }
