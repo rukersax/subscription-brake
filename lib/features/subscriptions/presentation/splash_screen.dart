@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_theme.dart';
+import '../../../core/theme/app_theme.dart';
 import 'dashboard_screen.dart';
 
 /// Animated Splash / Loading Screen displaying the Subscription Brake brand logo
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.shield_rounded,
                       size: 52,
