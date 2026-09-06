@@ -63,30 +63,30 @@ class AppUpdateService {
     }
   }
 
-  /// Checks GitHub Releases API for the latest release
+  /// Checks GitHub Releases API and fallback to GitHub direct releases redirect
   Future<AppReleaseInfo?> checkLatestRelease({String? repository}) async {
     final reposToTry = [
-      if (repository != null) repository,
+      if (repository != null && repository.trim().isNotEmpty) repository.trim(),
       defaultRepo,
       fallbackRepo,
     ];
 
     for (final repo in reposToTry) {
-      final url = Uri.parse('https://api.github.com/repos/$repo/releases/latest');
+      // 1. Try Official GitHub REST API
       try {
+        final url = Uri.parse('https://api.github.com/repos/$repo/releases/latest');
         final response = await http.get(url, headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Subscription-Brake-App',
-        }).timeout(const Duration(seconds: 8));
+          'User-Agent': 'Mozilla/5.0 (Linux; Android) SubscriptionBrake/$currentVersion',
+        }).timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final tagName = data['tag_name'] as String? ?? '';
+          final tagName = (data['tag_name'] as String? ?? '').trim();
           final bodyNotes = data['body'] as String?;
           final htmlUrl = data['html_url'] as String? ?? 'https://github.com/$repo/releases';
 
-          // Look for direct APK asset download URL
-          String downloadUrl = htmlUrl;
+          String downloadUrl = 'https://github.com/$repo/releases/download/$tagName/app-release.apk';
           final assets = data['assets'] as List<dynamic>?;
           if (assets != null && assets.isNotEmpty) {
             final apkAsset = assets.firstWhere(
@@ -110,7 +110,39 @@ class AppUpdateService {
           );
         }
       } catch (e) {
-        debugPrint('AppUpdateService error checking release on $repo: $e');
+        debugPrint('AppUpdateService API check error on $repo: $e');
+      }
+
+      // 2. Direct Web Fallback (Works even when GitHub API rate-limits or blocks)
+      try {
+        final directUrl = Uri.parse('https://github.com/$repo/releases/latest');
+        final request = http.Request('GET', directUrl)..followRedirects = false;
+        final client = http.Client();
+        final streamedResponse = await client.send(request).timeout(const Duration(seconds: 10));
+        
+        // Follow redirect location: e.g. /rukersax/subscription-brake/releases/tag/v1.2.0
+        final location = streamedResponse.headers['location'] ?? '';
+        client.close();
+
+        if (location.contains('/releases/tag/')) {
+          final parts = location.split('/releases/tag/');
+          if (parts.length > 1) {
+            final tagName = parts[1].split('?')[0].trim();
+            final hasUpdate = isNewerVersion(tagName, currentVersion);
+            final downloadUrl = 'https://github.com/$repo/releases/download/$tagName/app-release.apk';
+
+            return AppReleaseInfo(
+              currentVersion: currentVersion,
+              latestVersion: tagName.replaceAll('v', ''),
+              hasUpdate: hasUpdate,
+              releaseNotes: 'GitHub Sürüm Notları: $tagName',
+              downloadUrl: downloadUrl,
+              htmlUrl: 'https://github.com/$repo/releases/tag/$tagName',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('AppUpdateService web redirect fallback error on $repo: $e');
       }
     }
     return null;
@@ -287,22 +319,25 @@ class AppUpdateNotifier extends StateNotifier<AppUpdateState> {
       if (info != null && info.hasUpdate) {
         AppUpdateService.showUpdateDialog(context, info: info, tr: tr);
       } else if (isManual) {
+        final message = info != null
+            ? '${tr.alreadyLatestVersion} (v${AppUpdateService.currentVersion})'
+            : 'Güncelleme sunucusuna bağlanılamadı. Lütfen internet bağlantınızı kontrol edin.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                Icon(
+                  info != null ? Icons.check_circle_outline : Icons.wifi_off_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    info != null
-                        ? '${tr.alreadyLatestVersion} (v${AppUpdateService.currentVersion})'
-                        : 'Henüz yeni bir sürüm yayınlanmadı (v${AppUpdateService.currentVersion})',
-                  ),
+                  child: Text(message),
                 ),
               ],
             ),
-            backgroundColor: AppTheme.primaryNavy,
+            backgroundColor: info != null ? AppTheme.primaryNavy : Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
           ),
