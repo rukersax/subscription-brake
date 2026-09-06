@@ -133,6 +133,7 @@ class SubscriptionListNotifier extends StateNotifier<AsyncValue<List<UserSubscri
     String? catalogId,
     String? paymentMethodHint,
     String? notes,
+    String? cancellationUrl,
   }) {
     // Check against catalog baseline if available
     double? baselinePrice;
@@ -171,6 +172,7 @@ class SubscriptionListNotifier extends StateNotifier<AsyncValue<List<UserSubscri
       priceHikePercentage: hikePct,
       paymentMethodHint: paymentMethodHint,
       notes: notes,
+      cancellationUrl: cancellationUrl,
     );
 
     state.whenData((list) {

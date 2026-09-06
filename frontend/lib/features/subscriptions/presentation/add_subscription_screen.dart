@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/subscription_model.dart';
 import '../providers/catalog_provider.dart';
@@ -30,6 +31,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
   final _priceController = TextEditingController();
   final _paymentMethodController = TextEditingController();
   final _notesController = TextEditingController();
+  final _cancellationUrlController = TextEditingController();
 
   String _selectedCategory = 'Streaming Video';
   String _selectedBillingCycle = 'monthly';
@@ -68,6 +70,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
       _priceController.text = sub.price.toStringAsFixed(2);
       _paymentMethodController.text = sub.paymentMethodHint ?? '';
       _notesController.text = sub.notes ?? '';
+      _cancellationUrlController.text = sub.cancellationUrl ?? '';
       _selectedCategory = sub.category;
       _selectedBillingCycle = sub.billingCycle;
       _selectedCurrency = sub.currency;
@@ -86,6 +89,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
     _priceController.dispose();
     _paymentMethodController.dispose();
     _notesController.dispose();
+    _cancellationUrlController.dispose();
     super.dispose();
   }
 
@@ -97,6 +101,9 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
       _selectedBillingCycle = item.defaultBillingCycle;
       _selectedCurrency = 'TRY';
       _priceController.text = item.priceTry.toStringAsFixed(2);
+      if (item.websiteUrl != null) {
+        _cancellationUrlController.text = item.websiteUrl!;
+      }
       _tabController.animateTo(1); // Switch to manual form with prefilled values
     });
 
@@ -151,6 +158,9 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
             ? _paymentMethodController.text.trim()
             : null,
         notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+        cancellationUrl: _cancellationUrlController.text.trim().isNotEmpty
+            ? _cancellationUrlController.text.trim()
+            : null,
       );
       ref.read(subscriptionListProvider.notifier).updateSubscription(updated);
     } else {
@@ -169,6 +179,9 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
                 ? _paymentMethodController.text.trim()
                 : null,
             notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+            cancellationUrl: _cancellationUrlController.text.trim().isNotEmpty
+                ? _cancellationUrlController.text.trim()
+                : null,
           );
     }
 
@@ -178,17 +191,18 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
   @override
   Widget build(BuildContext context) {
     final catalogList = ref.watch(catalogListProvider);
+    final tr = ref.watch(stringsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Subscription' : 'Add Subscription'),
+        title: Text(isEditing ? tr.editSubscription : tr.addSubscription),
         bottom: !isEditing
             ? TabBar(
                 controller: _tabController,
                 indicatorColor: AppTheme.accentEmerald,
-                tabs: const [
-                  Tab(icon: Icon(Icons.explore_outlined), text: 'Catalog (1-Click)'),
-                  Tab(icon: Icon(Icons.edit_note), text: 'Custom Details'),
+                tabs: [
+                  Tab(icon: const Icon(Icons.explore_outlined), text: tr.selectFromCatalog),
+                  Tab(icon: const Icon(Icons.edit_note), text: tr.customSubscription),
                 ],
               )
             : null,
@@ -455,12 +469,49 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen>
             TextFormField(
               controller: _notesController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Notes & Reminder Remarks (Optional)',
+              decoration: InputDecoration(
+                labelText: '${tr.notes} (İsteğe Bağlı)',
                 hintText: 'e.g. Shared with roommates, cancel if unused',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.notes_outlined),
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.notes_outlined),
               ),
+            ),
+            const SizedBox(height: 16),
+
+            // Cancellation / Management Link Field
+            TextFormField(
+              controller: _cancellationUrlController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: tr.cancellationUrl,
+                hintText: tr.cancellationUrlHint,
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.link_outlined),
+                helperText: tr.cancellationUrlDesc,
+                helperMaxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.shop_outlined, size: 16),
+                  label: Text(tr.quickFillPlayStore),
+                  onPressed: () {
+                    _cancellationUrlController.text =
+                        'https://play.google.com/store/account/subscriptions';
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.apple, size: 16),
+                  label: Text(tr.quickFillAppStore),
+                  onPressed: () {
+                    _cancellationUrlController.text =
+                        'https://apps.apple.com/account/subscriptions';
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 

@@ -42,6 +42,39 @@ class SecureStorageService {
   }
 
   static const String _keySubscriptions = 'user_subscriptions_v1';
+  static const String _keyThemeMode = 'app_theme_mode';
+  static const String _keyLocale = 'app_locale';
+  static const String _keyNotifications = 'notification_settings_v1';
+
+  Future<void> saveThemeMode(String mode) async {
+    await _storage.write(key: _keyThemeMode, value: mode);
+  }
+
+  Future<String?> getThemeMode() async {
+    return await _storage.read(key: _keyThemeMode);
+  }
+
+  Future<void> saveLocale(String locale) async {
+    await _storage.write(key: _keyLocale, value: locale);
+  }
+
+  Future<String?> getLocale() async {
+    return await _storage.read(key: _keyLocale);
+  }
+
+  Future<void> saveNotificationSettings(Map<String, dynamic> data) async {
+    await _storage.write(key: _keyNotifications, value: jsonEncode(data));
+  }
+
+  Future<Map<String, dynamic>?> getNotificationSettings() async {
+    final raw = await _storage.read(key: _keyNotifications);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> saveSubscriptions(List<Map<String, dynamic>> items) async {
     await _storage.write(key: _keySubscriptions, value: jsonEncode(items));

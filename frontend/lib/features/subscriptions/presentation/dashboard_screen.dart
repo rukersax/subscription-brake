@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/localization/app_localizations.dart';
+import '../../../core/services/app_update_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../settings/presentation/settings_screen.dart';
 import '../models/subscription_model.dart';
 import '../providers/subscription_providers.dart';
 import 'add_subscription_screen.dart';
@@ -11,6 +15,13 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(stringsProvider);
+
+    // Auto-check for updates once on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appUpdateProvider.notifier).checkAutoOnStartup(context, tr);
+    });
+
     final selectedCurrency = ref.watch(selectedCurrencyProvider);
     final currencyFormat = NumberFormat.currency(
       locale: selectedCurrency == 'TRY' ? 'tr_TR' : 'en_US',
@@ -90,8 +101,17 @@ class DashboardScreen extends ConsumerWidget {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Reload subscriptions',
+            tooltip: tr.reload,
             onPressed: () => ref.read(subscriptionListProvider.notifier).loadSubscriptions(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: tr.settings,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -99,7 +119,7 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: AppTheme.primaryNavy,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Add Subscription'),
+        label: Text(tr.addSubscription),
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -361,15 +381,15 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 16),
                         Text(
                           selectedCategory == 'All'
-                              ? 'Henüz abonelik eklenmedi'
-                              : '$selectedCategory kategorisinde abonelik yok',
+                              ? tr.emptyTitle
+                              : '$selectedCategory',
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           selectedCategory == 'All'
-                              ? 'Takip etmek istediğiniz dijital aboneliklerinizi sağ alttaki butonla ekleyin.'
-                              : 'Farklı bir kategori seçebilir veya yeni ekleyebilirsiniz.',
+                              ? tr.emptyDesc
+                              : tr.emptyDesc,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                         ),
@@ -382,7 +402,7 @@ class DashboardScreen extends ConsumerWidget {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             icon: const Icon(Icons.add, size: 18),
-                            label: const Text('İlk Aboneliğini Ekle'),
+                            label: Text(tr.addFirst),
                             onPressed: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -572,6 +592,42 @@ class DashboardScreen extends ConsumerWidget {
                                       '/${sub.billingCycle == 'annual' ? 'yr' : 'mo'}',
                                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                                     ),
+                                    const SizedBox(height: 6),
+                                    InkWell(
+                                      onTap: () async {
+                                        final uri = Uri.parse(sub.effectiveCancellationUrl);
+                                        try {
+                                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                        } catch (_) {}
+                                      },
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentEmerald.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              tr.openCancellationPage,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Color(0xFF047857),
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            const Icon(
+                                              Icons.open_in_new,
+                                              size: 10,
+                                              color: Color(0xFF047857),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -640,16 +696,45 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               if (sub.notes != null) ...[
                 const SizedBox(height: 8),
-                const Text('Notes:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('${tr.notes}:', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 Text(sub.notes!, style: const TextStyle(color: Colors.grey)),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              // Direct Cancellation / Manage Action Button
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryNavy,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: Text(
+                  tr.cancelOrManage,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                onPressed: () async {
+                  final url = sub.effectiveCancellationUrl;
+                  final uri = Uri.parse(url);
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('URL açılamadı: $url')),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Edit'),
+                      label: Text(tr.editSubscription),
                       onPressed: () {
                         Navigator.of(context).pop();
                         Navigator.of(context).push(
@@ -670,7 +755,7 @@ class DashboardScreen extends ConsumerWidget {
                         foregroundColor: Colors.white,
                       ),
                       icon: const Icon(Icons.delete_outline),
-                      label: const Text('Delete'),
+                      label: Text(tr.delete),
                       onPressed: () {
                         ref.read(subscriptionListProvider.notifier).removeSubscription(sub.id);
                         Navigator.of(context).pop();

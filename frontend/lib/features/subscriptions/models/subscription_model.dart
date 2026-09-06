@@ -67,6 +67,7 @@ class UserSubscriptionItem {
   final String status;
   final String? paymentMethodHint;
   final String? notes;
+  final String? cancellationUrl;
 
   const UserSubscriptionItem({
     required this.id,
@@ -86,7 +87,31 @@ class UserSubscriptionItem {
     this.status = 'active',
     this.paymentMethodHint,
     this.notes,
+    this.cancellationUrl,
   });
+
+  /// Intelligent direct cancellation / account manage URL
+  String get effectiveCancellationUrl {
+    if (cancellationUrl != null && cancellationUrl!.trim().isNotEmpty) {
+      return cancellationUrl!.trim();
+    }
+    final lower = serviceName.toLowerCase();
+    if (lower.contains('netflix')) return 'https://www.netflix.com/youraccount';
+    if (lower.contains('spotify')) return 'https://www.spotify.com/account';
+    if (lower.contains('youtube')) return 'https://www.youtube.com/paid_memberships';
+    if (lower.contains('disney')) return 'https://www.disneyplus.com/account';
+    if (lower.contains('amazon') || lower.contains('prime')) return 'https://www.amazon.com.tr/mc/manage';
+    if (lower.contains('apple') || lower.contains('icloud')) return 'https://apps.apple.com/account/subscriptions';
+    if (lower.contains('google') || lower.contains('play') || lower.contains('one')) return 'https://play.google.com/store/account/subscriptions';
+    if (lower.contains('exxen')) return 'https://www.exxen.com/tr/hesabim';
+    if (lower.contains('blutv')) return 'https://www.blutv.com/hesabim';
+    if (lower.contains('gain')) return 'https://www.gain.tv/hesabim';
+    if (lower.contains('chatgpt') || lower.contains('openai')) return 'https://chat.openai.com/#settings';
+    if (lower.contains('midjourney')) return 'https://www.midjourney.com/account';
+    if (lower.contains('playstation') || lower.contains('ps plus')) return 'https://store.playstation.com';
+    if (lower.contains('xbox') || lower.contains('game pass')) return 'https://account.microsoft.com/services';
+    return 'https://play.google.com/store/account/subscriptions';
+  }
 
   /// Monthly normalized cost calculation in TRY or base currency
   double get monthlyNormalizedPrice {
@@ -117,6 +142,7 @@ class UserSubscriptionItem {
       status: json['status'] as String? ?? 'active',
       paymentMethodHint: json['payment_method_hint'] as String?,
       notes: json['notes'] as String?,
+      cancellationUrl: json['cancellation_url'] as String?,
     );
   }
 
@@ -139,6 +165,7 @@ class UserSubscriptionItem {
       'status': status,
       'payment_method_hint': paymentMethodHint,
       'notes': notes,
+      'cancellation_url': cancellationUrl,
     };
   }
 }
