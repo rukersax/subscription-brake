@@ -1,10 +1,10 @@
-nname: Build Flutter APK
+name: Build Flutter APK
 
 on:
   workflow_dispatch:
   push:
     branches: [ main, master ]
-    
+
 jobs:
   build:
     name: Build Flutter APK
