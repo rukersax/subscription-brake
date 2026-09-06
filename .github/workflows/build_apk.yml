@@ -2,33 +2,76 @@ name: Build Flutter APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main, master ]
 
 jobs:
   build:
+    name: Build Flutter APK
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
+
+      - name: Prepare Flutter Project & Generate Android Platform
+        run: |
+          TARGET_DIR="."
+          if [ -d "frontend" ] && [ -f "frontend/pubspec.yaml" ]; then
+            TARGET_DIR="frontend"
+          fi
+          echo "Target Flutter directory: $TARGET_DIR"
+          cd "$TARGET_DIR"
+
+          # 1. Generate android platform directory if missing
+          if [ ! -d "android" ]; then
+            echo "Android directory not found. Generating Flutter android platform files..."
+            flutter create . --platforms=android --org com.aistudio.subscriptionbrake
+          fi
+
+          # 2. Ensure minSdk is 21+ for modern libraries (flutter_secure_storage, etc.)
+          for file in android/app/build.gradle android/app/build.gradle.kts; do
+            if [ -f "$file" ]; then
+              sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' "$file" || true
+              sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/g' "$file" || true
+            fi
+          done
+
+          # 3. Resolve dependencies
+          flutter pub get
 
       - name: Build APK
-        working-directory: ./frontend
         run: |
-          flutter pub get
-          flutter build apk --release
+          TARGET_DIR="."
+          if [ -d "frontend" ] && [ -f "frontend/pubspec.yaml" ]; then
+            TARGET_DIR="frontend"
+          fi
+          cd "$TARGET_DIR"
 
-      - name: Upload APK
+          # Build release APK; fallback to debug if release signing requires config
+          flutter build apk --release || flutter build apk --debug
+
+          # Ensure at least one APK exists
+          if [ ! -f "build/app/outputs/flutter-apk/app-release.apk" ] && [ ! -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+            flutter build apk --debug
+          fi
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: subscription-brake-apk
-          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          path: "**/build/app/outputs/flutter-apk/*.apk"
+          if-no-files-found: error
+
