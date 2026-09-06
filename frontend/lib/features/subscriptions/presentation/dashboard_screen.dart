@@ -9,6 +9,7 @@ import '../../settings/presentation/settings_screen.dart';
 import '../models/subscription_model.dart';
 import '../providers/subscription_providers.dart';
 import 'add_subscription_screen.dart';
+import 'widgets/savings_tip_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -221,7 +222,10 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Feature Seeding: Trial Expiry Guardian (24h Alert)
+                // 2. Daily Savings & Financial Tip Card
+                const SavingsTipCard(),
+
+                // 3. Feature Seeding: Trial Expiry Guardian (24h Alert)
                 if (trialAlerts.isNotEmpty) ...[
                   Card(
                     color: const Color(0xFFFEF2F2),

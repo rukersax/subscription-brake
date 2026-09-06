@@ -68,6 +68,8 @@ class AppStrings {
   final String currentVersion;
   final String latestVersion;
   final String releaseNotes;
+  final String financialTipTitle;
+  final String nextTip;
 
   const AppStrings({
     required this.appTitle,
@@ -136,6 +138,8 @@ class AppStrings {
     required this.currentVersion,
     required this.latestVersion,
     required this.releaseNotes,
+    required this.financialTipTitle,
+    required this.nextTip,
   });
 }
 
@@ -206,6 +210,8 @@ const trStrings = AppStrings(
   currentVersion: 'Mevcut Sürüm',
   latestVersion: 'En Son Sürüm',
   releaseNotes: 'Yenilikler',
+  financialTipTitle: 'Günün Tasarruf İpucu',
+  nextTip: 'Sonraki İpucu',
 );
 
 const enStrings = AppStrings(
@@ -275,6 +281,8 @@ const enStrings = AppStrings(
   currentVersion: 'Current Version',
   latestVersion: 'Latest Version',
   releaseNotes: 'Release Notes',
+  financialTipTitle: 'Daily Savings Tip',
+  nextTip: 'Next Tip',
 );
 
 class AppLocalizations {

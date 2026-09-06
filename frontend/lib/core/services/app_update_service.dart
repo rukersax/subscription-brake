@@ -26,7 +26,7 @@ class AppReleaseInfo {
 }
 
 class AppUpdateService {
-  static const String currentVersion = '1.1.0';
+  static const String currentVersion = '1.2.0';
   static const String defaultRepo = 'rukersax/subscription-brake';
   static const String fallbackRepo = 'berkayturangs/subscription-brake';
   static const String _keyCustomRepo = 'update_github_repo';
