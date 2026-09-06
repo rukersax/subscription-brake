@@ -361,7 +361,7 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              'v1.0.0 • Financial Guard Dog',
+                              'v${AppUpdateService.currentVersion} • Financial Guard Dog',
                               style: TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],

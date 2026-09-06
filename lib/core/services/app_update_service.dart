@@ -26,15 +26,14 @@ class AppReleaseInfo {
 }
 
 class AppUpdateService {
-  static const String currentVersion = '1.0.0';
-  static const String defaultRepo = 'berkayturangs/subscription-brake';
+  static const String currentVersion = '1.1.0';
+  static const String defaultRepo = 'rukersax/subscription-brake';
+  static const String fallbackRepo = 'berkayturangs/subscription-brake';
   static const String _keyCustomRepo = 'update_github_repo';
 
   final SecureStorageService _storage = SecureStorageService();
 
   Future<String> getTargetRepo() async {
-    final custom = await _storage.getLocale(); // can reuse key or dedicated
-    // Check if custom repo is saved
     return defaultRepo;
   }
 
@@ -66,50 +65,55 @@ class AppUpdateService {
 
   /// Checks GitHub Releases API for the latest release
   Future<AppReleaseInfo?> checkLatestRelease({String? repository}) async {
-    final repo = repository ?? defaultRepo;
-    final url = Uri.parse('https://api.github.com/repos/$repo/releases/latest');
+    final reposToTry = [
+      if (repository != null) repository,
+      defaultRepo,
+      fallbackRepo,
+    ];
 
-    try {
-      final response = await http.get(url, headers: {
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'Subscription-Brake-App',
-      }).timeout(const Duration(seconds: 8));
+    for (final repo in reposToTry) {
+      final url = Uri.parse('https://api.github.com/repos/$repo/releases/latest');
+      try {
+        final response = await http.get(url, headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Subscription-Brake-App',
+        }).timeout(const Duration(seconds: 8));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final tagName = data['tag_name'] as String? ?? '';
-        final bodyNotes = data['body'] as String?;
-        final htmlUrl = data['html_url'] as String? ?? 'https://github.com/$repo/releases';
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final tagName = data['tag_name'] as String? ?? '';
+          final bodyNotes = data['body'] as String?;
+          final htmlUrl = data['html_url'] as String? ?? 'https://github.com/$repo/releases';
 
-        // Look for direct APK asset download URL
-        String downloadUrl = htmlUrl;
-        final assets = data['assets'] as List<dynamic>?;
-        if (assets != null && assets.isNotEmpty) {
-          final apkAsset = assets.firstWhere(
-            (a) => (a['name'] as String? ?? '').toLowerCase().endsWith('.apk'),
-            orElse: () => null,
-          );
-          if (apkAsset != null && apkAsset['browser_download_url'] != null) {
-            downloadUrl = apkAsset['browser_download_url'] as String;
+          // Look for direct APK asset download URL
+          String downloadUrl = htmlUrl;
+          final assets = data['assets'] as List<dynamic>?;
+          if (assets != null && assets.isNotEmpty) {
+            final apkAsset = assets.firstWhere(
+              (a) => (a['name'] as String? ?? '').toLowerCase().endsWith('.apk'),
+              orElse: () => null,
+            );
+            if (apkAsset != null && apkAsset['browser_download_url'] != null) {
+              downloadUrl = apkAsset['browser_download_url'] as String;
+            }
           }
+
+          final hasUpdate = isNewerVersion(tagName, currentVersion);
+
+          return AppReleaseInfo(
+            currentVersion: currentVersion,
+            latestVersion: tagName.replaceAll('v', ''),
+            hasUpdate: hasUpdate,
+            releaseNotes: bodyNotes,
+            downloadUrl: downloadUrl,
+            htmlUrl: htmlUrl,
+          );
         }
-
-        final hasUpdate = isNewerVersion(tagName, currentVersion);
-
-        return AppReleaseInfo(
-          currentVersion: currentVersion,
-          latestVersion: tagName.replaceAll('v', ''),
-          hasUpdate: hasUpdate,
-          releaseNotes: bodyNotes,
-          downloadUrl: downloadUrl,
-          htmlUrl: htmlUrl,
-        );
+      } catch (e) {
+        debugPrint('AppUpdateService error checking release on $repo: $e');
       }
-      return null;
-    } catch (e) {
-      debugPrint('AppUpdateService error checking release: $e');
-      return null;
     }
+    return null;
   }
 
   /// Show the Update Dialog to user
